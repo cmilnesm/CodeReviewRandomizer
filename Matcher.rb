@@ -1,9 +1,12 @@
-
-# Matcher.rb will develop a schedule for 6 weeks worth of code reviewing. The requirements are as follows
-# 1. A list of people will be paired up by reviewer - reviewee and by project. 
-# 2. Only one project can be set to have their code reviewed at any given time.
-
-
+#! /usr/bin/ruby
+##########################HEADER#########################
+# Matcher.rb will develop a schedule for 6 weeks worth of code reviewing. This script will do the following:
+# 1. Read all data from the CSV file 
+# 2. Randomize the data so each run will produce a different schedule
+# 3. Match people up based upon project ensuring that each project only has one author during any given run
+# 2. Print out the names of any people that are not assigned as a reviewer.
+#########################################################
+require 'CSV'
 
 class Person
 	attr_accessor :name, :project
@@ -22,15 +25,6 @@ class Review
 		@reviewer = reviewer
 	end
 end
-
-#def validate (schedule)
-#	proj = Hash.new(0)
-#	schedule.each do |check|
-#		proj[check.author.project] +=1 
-#	end
-#	return true if proj.has_value?(2)
-#	return false
-#end
 
 # Creates a schedule for the review ensuring that the 
 # business rules are met. See above for the rules.
@@ -57,26 +51,36 @@ def create_schedule (schedule, staff)
 		staff_temp.delete(tmp[0])
 	end
 	
+	#print out all the people that have not been used as a reviewer. This information
+	#allows for balancing of people
+	staff_temp.each do |person|
+		puts "#{person.name} is unused as a reviewer"
+	end
+
 	schedule
 end
 
-staff = Array.new
-staff.push (Person.new("Clayton", "Heartbeat"))
-staff.push (Person.new("James", "Vindicia"))
-staff.push (Person.new("Nat", "Heartbeat"))
-staff.push (Person.new("Robbie", "AppDirect"))
-staff.push (Person.new("Tate", "Liftopia"))
-staff.push (Person.new("Arlene", "Aires"))
-staff.push (Person.new("Katie", "Leap Motion"))
-staff.shuffle!
+if ARGV[0] == nil 
+	puts "Please enter a filename for the csv datafile"
+else
+	begin
+		#Get the names and projects for everyone participating in the code review from the .csv file
+		staff = Array.new
+		CSV.foreach(ARGV[0]) do |row|
+			staff.push(Person.new(row[0],row[1]))
+		end
+		staff.shuffle! #Randomize the array so we mix things up.
 
-
-
-schedule = create_schedule(Array.new, staff)
-schedule.each do |review|
-	if review.reviewer == nil
-		puts "found an empty object"
-	else
-		puts "Reviewer: #{review.reviewer.name}  Author: #{review.author.name} Project: #{review.author.project}"
+		#Create the schedule and output the results to the console
+		schedule = create_schedule(Array.new, staff)
+		schedule.each do |review|
+			if review.reviewer == nil
+				puts "found an empty object. Please check data and rerun script with Author=#{review.author.name}"
+			else
+				puts "Reviewer: #{review.reviewer.name}  Author: #{review.author.name} Project: #{review.author.project}"
+			end
+		end
+	rescue Errno::ENOENT
+		puts "#{ARGV[0]} Not found. Please check the filename and try again"	
 	end
 end
